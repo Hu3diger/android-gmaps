@@ -1,5 +1,7 @@
 package com.example.atividade_maps;
 
+import android.app.Activity;
+import android.app.AlertDialog;
 import android.database.Cursor;
 import android.os.StrictMode;
 import android.support.v4.app.FragmentActivity;
@@ -21,21 +23,17 @@ import org.json.JSONArray;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
-    JSONArray locations;
-    JSONLoader loader = new JSONLoader();
-    ArrayList<Contato> contatos = new ArrayList();
+    private ArrayList<Contato> contatos = new ArrayList();
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        loader.downloadJSON();
-        locations = loader.loadJSONobject();
-        loadContacts();
         setContentView(R.layout.activity_maps);
         if (android.os.Build.VERSION.SDK_INT > 9) {
             StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
@@ -45,6 +43,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+        loadContacts();
     }
 
     /**
@@ -66,47 +65,45 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW)));
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(catolica, 9));
 
-        for (Contato c : contatos) {
+        for (final Contato c : contatos) {
             LatLng coords = new LatLng(c.getLatitude(), c.getLongitude());
             mMap.addMarker(new MarkerOptions().position(coords).title(c.getNome() + " - " + c.getEmail()).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
         }
-
     }
 
-    public void loadJsonToDB() {
-        try {
-            DAL dal = new DAL(MapsActivity.this);
-            for (int i = 0; i < locations.length(); i++) {
-                Contato c = new Contato();
-                c.nome = locations.getJSONObject(i).getString("nome");
-                c.email = locations.getJSONObject(i).getString("email");
-                c.latitude = locations.getJSONObject(i).getDouble("latitude");
-                c.longitude = locations.getJSONObject(i).getDouble("longitude");
-                dal.insert(c.getNome(), c.getEmail(), c.getLatitude(), c.getLatitude());
-                contatos.add(c);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 
     public void loadContacts() {
         DAL dal = new DAL(MapsActivity.this);
         Cursor cursor = dal.loadAll();
         if (cursor.getCount() > 0) {
-            do{
+            do {
                 Contato c = new Contato();
-                c.setNome(cursor.getString(1));
-                c.setEmail(cursor.getString(2));
-                c.setLatitude(cursor.getDouble(3));
-                c.setLongitude(cursor.getDouble(4));
+                c.setNome(cursor.getString(0));
+                c.setEmail(cursor.getString(1));
+                c.setLatitude(cursor.getDouble(2));
+                c.setLongitude(cursor.getDouble(3));
                 contatos.add(c);
                 cursor.moveToNext();
-            }while(cursor.moveToNext());
-        }else{
+            } while (!cursor.isAfterLast());
+        } else {
             cursor.close();
-            loadJsonToDB();
-        }
+            try {
+                JSONLoader loader = new JSONLoader();
+                loader.downloadJSON();
+                JSONArray locations = loader.loadJSONobject();
 
+                for (int i = 0; i < locations.length(); i++) {
+                    Contato c = new Contato();
+                    c.nome = locations.getJSONObject(i).getString("nome");
+                    c.email = locations.getJSONObject(i).getString("email");
+                    c.latitude = locations.getJSONObject(i).getDouble("latitude");
+                    c.longitude = locations.getJSONObject(i).getDouble("longitude");
+                    dal.insert(c.getNome(), c.getEmail(), c.getLatitude(), c.getLongitude());
+                    contatos.add(c);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 }

@@ -153,7 +153,7 @@ class DAL {
 
     Cursor loadAll() {
         Cursor cursor;
-        String[] fields = {CreateDatabase.ID, CreateDatabase.NOME, CreateDatabase.EMAIL, CreateDatabase.LATITUDE, CreateDatabase.LONGITUDE};
+        String[] fields = {CreateDatabase.NOME, CreateDatabase.EMAIL, CreateDatabase.LATITUDE, CreateDatabase.LONGITUDE};
         db = database.getReadableDatabase();
 
         // SELECT _id, title FROM book
